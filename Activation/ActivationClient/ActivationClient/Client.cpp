@@ -23,6 +23,8 @@ void cleanup(SOCKET socket);
 // Function to check if a file with the name filename exists. Returns true if it does
 // and false if it doesn't.
 bool fexists(const char* filename);
+//
+bool determineactivated();
 
 
 int main(int argc, char* argv[])
@@ -33,6 +35,7 @@ int main(int argc, char* argv[])
 	string		input;				// generic input from user
 	int			port;				// server's port number
 	int			iResult;			// resulting code from socket functions
+	int			machineId;			// serial number for the current machine
 
 	// If user types in a port number on the command line use it,
 	// otherwise, use the default port number
@@ -41,10 +44,16 @@ int main(int argc, char* argv[])
 	else
 		port = DEFAULTPORT; 
 
+
+	cin >> machineId;
+
+
 	if (fexists(ACTIVATIONFILENAME))
 	{
-		cout << "This device has already been activated" << endl;
-		return 0;
+		cout << "The activation file exists" << endl;
+		bool isActivated = determineactivated();
+		if (isActivated)
+			return 0;
 	}
 
 	
@@ -110,4 +119,10 @@ bool fexists(const char* filename)
 	}
 	fin.close();
 	return true;
+}
+
+bool determineactivated()
+{
+	ifstream fin(ACTIVATIONFILENAME);
+
 }

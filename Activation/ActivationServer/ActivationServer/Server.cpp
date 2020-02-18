@@ -83,8 +83,18 @@ int main(int argc, char* argv[])
 		cleanup(listenSocket);
 		return 1;
 	}
+
+
+	// Start listening for incoming connections
+	iResult = listen(listenSocket, 1);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Listen failed with error: " << WSAGetLastError() << endl;
+		cleanup(listenSocket);
+		return 1;
+	}
 	
-	
+
 	cout << "\nWaiting for connections...\n";
 
 	// Accept an incoming connection; Program pauses here until a connection arrives
