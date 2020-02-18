@@ -1,4 +1,4 @@
-#include <WinSock2.h>
+	#include <WinSock2.h>
 #include <Ws2tcpip.h>
 #include <iostream>
 #include <string>
@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
 	char		buffer[BUFFERSIZE];	// buffer to hold message received from server
 	int			port;				// server's port number
 	int			iResult;			// resulting code from socket functions
+	char		resultmessage[BUFFERSIZE];
 
 	// If user types in a port number on the command line use it,
 	// otherwise, use the default port number
@@ -106,9 +107,21 @@ int main(int argc, char* argv[])
 		cleanup(listenSocket);
 		return 1;
 	}
-
-	getline(cin, input);
+//	iResult = recv(clientSocket)
+	iResult =  recv(clientSocket,buffer,BUFFERSIZE - 1,0)
+		for (int i = 0; i < BUFFERSIZE; i++) {
+			if(buffer[i] == '\0'){break}
+			if (isdigit(buffer[i]) != TRUE) {
+				string message = "invalid serial number";
+				resultmessage = message.c_str;
+				send(clientSocket, resultmessage, strlen(message), 0);
+			}
+			string message = "valid serial number";
+			resultmessage = message.c_str;
+			send(clientSocket, resultmessage, strlen(message), 0);
 	
+	}
+	cleanup(clientSocket);
 	return 0;
 }
 
