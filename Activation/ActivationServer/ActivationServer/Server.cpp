@@ -111,15 +111,15 @@ int main(int argc, char* argv[])
 //	iResult = recv(clientSocket)
 	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
 	for (int i = 0; i < BUFFERSIZE; i++) {
-		if(buffer[i] == '\0'){break}
+		if (buffer[i] == '\0') { break; }
 		if (isdigit(buffer[i]) != TRUE) {
 			string message = "invalid serial number";
-			resultmessage = message.c_str;
-			send(clientSocket, resultmessage, strlen(message), 0);
+			char *resultmessage = message.c_str;
+			send(clientSocket, resultmessage, strlen(resultmessage), 0); 
 		}
 		string message = "valid serial number";
-		resultmessage = message.c_str;
-		send(clientSocket, resultmessage, strlen(message), 0);
+		char *resultmessage = message.c_str;
+		send(clientSocket, resultmessage, strlen(resultmessage), 0); 
 	
 	}
 	cleanup(clientSocket);
