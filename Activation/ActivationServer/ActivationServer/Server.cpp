@@ -24,6 +24,7 @@ void cleanup(SOCKET socket);
 
 int main(int argc, char* argv[])
 {
+	ifstream fileInput;
 	WSADATA		wsaData;			// structure to hold info about Windows sockets implementation
 	SOCKET		listenSocket;		// socket for listening for incoming connections
 	SOCKET		clientSocket;		// socket for communication with the client
@@ -108,20 +109,44 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 //	iResult = recv(clientSocket)
-	iResult =  recv(clientSocket,buffer,BUFFERSIZE - 1,0)
-		for (int i = 0; i < BUFFERSIZE; i++) {
-			if(buffer[i] == '\0'){break}
-			if (isdigit(buffer[i]) != TRUE) {
-				string message = "invalid serial number";
-				resultmessage = message.c_str;
-				send(clientSocket, resultmessage, strlen(message), 0);
-			}
-			string message = "valid serial number";
+	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
+	for (int i = 0; i < BUFFERSIZE; i++) {
+		if(buffer[i] == '\0'){break}
+		if (isdigit(buffer[i]) != TRUE) {
+			string message = "invalid serial number";
 			resultmessage = message.c_str;
 			send(clientSocket, resultmessage, strlen(message), 0);
+		}
+		string message = "valid serial number";
+		resultmessage = message.c_str;
+		send(clientSocket, resultmessage, strlen(message), 0);
 	
 	}
 	cleanup(clientSocket);
+
+	// Start listening for incoming connections
+	iResult = listen(listenSocket, 1);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Listen failed with error: " << WSAGetLastError() << endl;
+		cleanup(listenSocket);
+		return 1;
+	}
+	auto serial = buffer;
+	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
+
+
+
+	clientSocket = accept(listenSocket, NULL, NULL);
+	if (clientSocket == INVALID_SOCKET)
+	{
+		cerr << "Accept failed with error: " << WSAGetLastError() << endl;
+		// Need to close listenSocket; clientSocket never opened
+		cleanup(listenSocket);
+		return 1;
+	}
+	
+	 
 	return 0;
 }
 
