@@ -22,9 +22,9 @@ using namespace std;
 void cleanup(SOCKET socket);
 // Function to check if a file with the name filename exists. Returns true if it does
 // and false if it doesn't.
-bool fexists(const char* filename);
+bool fexists();
 //
-bool determineactivated();
+bool determineactivated(string machineId);
 
 
 int main(int argc, char* argv[])
@@ -35,7 +35,8 @@ int main(int argc, char* argv[])
 	string		input;				// generic input from user
 	int			port;				// server's port number
 	int			iResult;			// resulting code from socket functions
-	int			machineId;			// serial number for the current machine
+	string		machineId;			// machine id for the current machine
+	string		serialNumber;		// Serial number for the current machine
 
 	// If user types in a port number on the command line use it,
 	// otherwise, use the default port number
@@ -44,16 +45,18 @@ int main(int argc, char* argv[])
 	else
 		port = DEFAULTPORT; 
 
+	cout << "Enter your machine id: ";
+	getline(cin, machineId);
 
-	cin >> machineId;
 
-
-	if (fexists(ACTIVATIONFILENAME))
+	if (fexists())
 	{
-		cout << "The activation file exists" << endl;
-		bool isActivated = determineactivated();
+		bool isActivated = determineactivated(machineId);
 		if (isActivated)
+		{
+			cout << "This machine has been activated";
 			return 0;
+		}
 	}
 
 	
@@ -110,19 +113,27 @@ void cleanup(SOCKET socket)
 	WSACleanup();
 }
 
-bool fexists(const char* filename)
+bool fexists()
 {
-	ifstream fin(filename);
-
-	if (!fin) {
+	ifstream fin;
+	fin.open(ACTIVATIONFILENAME, ios::in);
+	if (!fin.is_open()) {
 		return false;
 	}
 	fin.close();
 	return true;
 }
 
-bool determineactivated()
+bool determineactivated(string machineId)
 {
-	ifstream fin(ACTIVATIONFILENAME);
+	ifstream fin;
+	fin.open(ACTIVATIONFILENAME, ios::in);
+	string storedMachineId;
+	getline(fin, storedMachineId);
 
+	if (storedMachineId.compare(machineId) == 0)
+	{
+		return true;
+	}
+	return false;
 }
