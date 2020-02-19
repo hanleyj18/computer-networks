@@ -101,6 +101,10 @@ int main(int argc, char* argv[])
 
 	cout << "Connected...\n\n";
 
+	//Send serial to the server
+	getline(cin, serialNumber);
+	char* serialArr = serialNumber.c_str;
+	iResult = send(mySocket, serialArr, strlen(serialArr), 0);
 
 	return 0;
 }
