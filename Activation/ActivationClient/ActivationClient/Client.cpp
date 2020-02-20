@@ -23,8 +23,11 @@ void cleanup(SOCKET socket);
 // Function to check if a file with the name filename exists. Returns true if it does
 // and false if it doesn't.
 bool fexists();
-//
-bool determineactivated(string machineId);
+// Determines if the machine has already been activated by comparing the machine id to the
+// contents of the activation file
+bool determineactivated(const string& machine_id);
+// Writes the machine id to the activation file
+void storemachineid(const string& machine_id);
 
 
 int main(int argc, char* argv[])
@@ -33,10 +36,11 @@ int main(int argc, char* argv[])
 	SOCKET		mySocket;			// socket for communication with the server
 	SOCKADDR_IN	serverAddr;			// structure to hold server address information
 	string		input;				// generic input from user
-	int			port;				// server's port number
-	int			iResult;			// resulting code from socket functions
 	string		machineId;			// machine id for the current machine
 	string		serialNumber;		// Serial number for the current machine
+	int			port;				// server's port number
+	int			iResult;			// resulting code from socket functions
+	char		buffer[BUFFERSIZE];	// buffer to hold message received from server
 
 	// If user types in a port number on the command line use it,
 	// otherwise, use the default port number
@@ -48,16 +52,20 @@ int main(int argc, char* argv[])
 	cout << "Enter your machine id: ";
 	getline(cin, machineId);
 
-
+	// If the file exists, check the contents to see if they match the machine id
+	// If they do, this machine has been activated, otherwise, we need to activate
 	if (fexists())
 	{
-		bool isActivated = determineactivated(machineId);
-		if (isActivated)
+		const bool is_activated = determineactivated(machineId);
+		if (is_activated)
 		{
 			cout << "This machine has been activated";
 			return 0;
 		}
 	}
+
+	cout << "Enter your serial number: ";
+	getline(cin, serialNumber);
 
 	
 	// WSAStartup loads WS2_32.dll (Winsock version 2.2) used in network programming
@@ -101,7 +109,71 @@ int main(int argc, char* argv[])
 
 	cout << "Connected...\n\n";
 
+	// Send the serial number to the server
+	iResult = send(mySocket, serialNumber.c_str(), sizeof(serialNumber.c_str()), 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Send failed with error: " << WSAGetLastError() << endl;
+		cleanup(mySocket);
+		return 1;
+	}
 
+	// Wait for a message saying if the serial number is valid or not
+	iResult = recv(mySocket, buffer, BUFFERSIZE, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Receive failed with error: " << WSAGetLastError() << endl;
+		cleanup(mySocket);
+		return 1;
+	}
+	// If the server returns "good" then we continue activating
+	else if (strcmp(buffer, "good") == 0)
+	{
+		cout << "Serial Number: Good" << endl;
+	}
+	// If the server returns anything else then we are stopping activation
+	else
+	{
+		cout << "Serial Number is invalid" << endl;
+		cleanup(mySocket);
+		return 1;
+	}
+
+
+	// Send the machine id to the server next
+	iResult = send(mySocket, machineId.c_str(), sizeof(machineId.c_str()), 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Send failed with error: " << WSAGetLastError() << endl;
+		cleanup(mySocket);
+		return 1;
+	}
+
+
+	// Wait for a message saying if the machine id is valid or not
+	iResult = recv(mySocket, buffer, BUFFERSIZE, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cerr << "Receive failed with error: " << WSAGetLastError() << endl;
+		cleanup(mySocket);
+		return 1;
+	}
+	// If the server returns "good" then we continue activating
+	else if (strcmp(buffer, "good") == 0)
+	{
+		cout << "Machine Id: Good" << endl;
+		storemachineid(machineId);
+		cout << "This machine is now activated" << endl;
+	}
+	// If the server returns anything else then we are stopping activation
+	else
+	{
+		cout << "Machine Id is invalid" << endl;
+		cleanup(mySocket);
+		return 1;
+	}
+	
+	// Everything activated fine and we are finished.
 	return 0;
 }
 
@@ -124,16 +196,23 @@ bool fexists()
 	return true;
 }
 
-bool determineactivated(string machineId)
+bool determineactivated(const string& machine_id)
 {
 	ifstream fin;
 	fin.open(ACTIVATIONFILENAME, ios::in);
-	string storedMachineId;
-	getline(fin, storedMachineId);
+	string stored_machine_id;
+	getline(fin, stored_machine_id);
 
-	if (storedMachineId.compare(machineId) == 0)
+	if (stored_machine_id == machine_id)
 	{
 		return true;
 	}
 	return false;
+}
+
+void storemachineid(const string& machine_id)
+{
+	fstream act_file;
+	act_file.open(ACTIVATIONFILENAME, ios::trunc);
+	act_file.write(machine_id.c_str(), sizeof(machine_id.c_str()));
 }
