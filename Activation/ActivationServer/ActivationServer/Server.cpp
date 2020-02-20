@@ -21,6 +21,9 @@ using namespace std;
 // Function to close the specified socket and perform DLL cleanup (WSACleanup)
 void cleanup(SOCKET socket);
 
+void activatenum(string serialnum, string machineid);
+
+void checkcereal(string serialNumber);
 
 int main(int argc, char* argv[])
 {
@@ -132,7 +135,8 @@ int main(int argc, char* argv[])
 		cleanup(listenSocket);
 		return 1;
 	}
-	auto serial = buffer;
+	//turns the character array into a string, if this yells let me know.
+	string serial(buffer);
 	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
 
 
@@ -146,6 +150,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	 
+	 recv(clientSocket,buffer,BUFFERSIZE - 1, 0);
+	 string machid(buffer);
+	 string response = "your machine id is" + checkcereal(serial,machid);
+	 cleanup(clientSocket);
+
 	return 0;
 }
 
@@ -158,4 +167,47 @@ void cleanup(SOCKET socket)
 	WSACleanup();
 }
 
+void activatenum(string serialnum, string machineid)
+{
+	std::ofstream fileserv;
+	fileserv.open(DATAFILENAME, std::ofstream | std::ofstream::app);
+	// if there is an error here, seperate the + \n's into separate writes.
+	fileserv << serialNumber + "\n";
+	fileserv << machineId + "\n";
+	fileserv.close();
+}
 
+string checkcereal(string serialNumber,string machineid)
+{
+	std::ifstream fileserv(DATAFILENAME);
+	if(fileserv.open())
+	{
+		string flin;
+		do
+		{
+			//finds serial number in the database
+			if( flin == serialNumber){
+				// it was found, now lets see if its valid.
+				if(getline(fileserv,flin))
+				{
+					//is valid.
+					if(machineid == flin)
+					{
+						string hold = "good";
+						return hold;
+					}
+					string hold2 = "invalid";
+					return hold2;
+				}
+			}
+		} while(getline(fileserv,flin);
+		fileserv.close();
+		//serial number wasnt found so call activate number
+		activatenum(serialNumber,machineid);
+		string hold3 = "good";
+		return hold3;
+
+	}
+	
+
+}
