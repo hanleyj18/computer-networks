@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 	 recv(clientSocket,buffer,BUFFERSIZE - 1, 0);
 	 string machid(buffer);
 	 string response = "your machine id is" + checkcereal(serial,machid);
-	 send(clientSocket,response.c_str(), strlen(response),0)
+	 send(clientSocket,response.c_str(), strlen(response),0);
 	 cleanup(clientSocket);
 
 	return 0;
