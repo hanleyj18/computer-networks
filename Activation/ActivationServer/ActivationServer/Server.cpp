@@ -23,7 +23,7 @@ void cleanup(SOCKET socket);
 
 void activatenum(string serialnum, string machineid);
 
-void checkcereal(string serialNumber);
+string checkserial(string serialNumber, string machineid);
 
 int main(int argc, char* argv[])
 {
@@ -117,11 +117,10 @@ int main(int argc, char* argv[])
 		if (buffer[i] == '\0') { break; }
 		if (isdigit(buffer[i]) != TRUE) {
 			string message = "invalid serial number";
-			char *resultmessage = message.c_str;
-			send(clientSocket, resultmessage, strlen(resultmessage), 0); 
+			send(clientSocket, message.c_str(), strlen(message.c_str()), 0); 
 		}
 		string message = "valid serial number";
-		send(clientSocket, message.c_str(), strlen(message), 0); 
+		send(clientSocket, message.c_str(), strlen(message.c_str()), 0);
 	
 	}
 	cleanup(clientSocket);
@@ -151,8 +150,8 @@ int main(int argc, char* argv[])
 	 
 	 recv(clientSocket,buffer,BUFFERSIZE - 1, 0);
 	 string machid(buffer);
-	 string response = "your machine id is" + checkcereal(serial,machid);
-	 send(clientSocket,response.c_str(), strlen(response),0);
+	 string response = "your machine id is" + checkserial(serial, machid);
+	 send(clientSocket,response.c_str(), strlen(response.c_str()),0);
 	 cleanup(clientSocket);
 
 	return 0;
@@ -170,17 +169,17 @@ void cleanup(SOCKET socket)
 void activatenum(string serialnum, string machineid)
 {
 	std::ofstream fileserv;
-	fileserv.open(DATAFILENAME, std::ofstream | std::ofstream::app);
+	fileserv.open(DATAFILENAME, std::ofstream::app);
 	// if there is an error here, seperate the + \n's into separate writes.
-	fileserv << serialNumber + "\n";
-	fileserv << machineId + "\n";
+	fileserv << serialnum + "\n";
+	fileserv << machineid + "\n";
 	fileserv.close();
 }
 
-string checkcereal(string serialNumber,string machineid)
+string checkserial(string serialNumber,string machineid)
 {
 	std::ifstream fileserv(DATAFILENAME);
-	if(fileserv.open())
+	if(fileserv.is_open())
 	{
 		string flin;
 		do
@@ -200,7 +199,7 @@ string checkcereal(string serialNumber,string machineid)
 					return hold2;
 				}
 			}
-		} while(getline(fileserv,flin);
+		} while(getline(fileserv,flin));
 		fileserv.close();
 		//serial number wasnt found so call activate number
 		activatenum(serialNumber,machineid);
@@ -209,5 +208,5 @@ string checkcereal(string serialNumber,string machineid)
 
 	}
 	
-
+	return 0;
 }
