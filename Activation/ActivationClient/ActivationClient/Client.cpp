@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 	else
 		port = DEFAULTPORT; 
 
-	cout << "Enter your machine id: ";
+	cout << "Enter your machine id: " << endl;
 	getline(cin, machineId);
 
 	// If the file exists, check the contents to see if they match the machine id
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	cout << "Enter your serial number: ";
+	cout << "Enter your serial number: " << endl;
 	getline(cin, serialNumber);
 
 	
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	cout << "\nAttempting to connect...\n";
+	cout << "\nAttempting to connect...\n" << endl;
 
 
 	// Setup a SOCKADDR_IN structure which will be used to hold address
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	cout << "Connected...\n\n";
+	cout << "Connected...\n" << endl;
 
 	// Send the serial number to the server
 	iResult = send(mySocket, serialNumber.c_str(), sizeof(serialNumber.c_str()), 0);
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 	// If the server returns anything else then we are stopping activation
 	else
 	{
-		cout << "Serial Number is invalid" << endl;
+		cout << "Serial Number: Invalid" << endl;
 		cleanup(mySocket);
 		return 1;
 	}
@@ -168,11 +168,11 @@ int main(int argc, char* argv[])
 	// If the server returns anything else then we are stopping activation
 	else
 	{
-		cout << "Machine Id is invalid" << endl;
+		cout << "Machine Id: Invalid" << endl;
 		cleanup(mySocket);
 		return 1;
 	}
-	
+
 	// Everything activated fine and we are finished.
 	return 0;
 }
@@ -213,6 +213,11 @@ bool determineactivated(const string& machine_id)
 void storemachineid(const string& machine_id)
 {
 	fstream act_file;
-	act_file.open(ACTIVATIONFILENAME, ios::trunc);
-	act_file.write(machine_id.c_str(), sizeof(machine_id.c_str()));
+	act_file.open(ACTIVATIONFILENAME, ios::trunc | ios::out);
+	if (act_file.is_open())
+	{
+		act_file.write(machine_id.c_str(), sizeof(machine_id.c_str()));
+		act_file.close();
+	}
+	cout << "Couldn't open activation file" << endl;
 }
