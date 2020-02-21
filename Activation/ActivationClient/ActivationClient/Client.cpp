@@ -25,9 +25,9 @@ void cleanup(SOCKET socket);
 bool fexists();
 // Determines if the machine has already been activated by comparing the machine id to the
 // contents of the activation file
-bool determineactivated(const string& machine_id);
+bool determineactivated(const string machine_id);
 // Writes the machine id to the activation file
-void storemachineid(const string& machine_id);
+void storemachineid(const string machine_id);
 
 
 int main(int argc, char* argv[])
@@ -59,10 +59,11 @@ int main(int argc, char* argv[])
 		const bool is_activated = determineactivated(machineId);
 		if (is_activated)
 		{
-			cout << "This machine has been activated";
+			cout << "This machine has been activated" << endl;
 			return 0;
 		}
 	}
+	cout << "Need to activate" << endl;
 
 	cout << "Enter your serial number: " << endl;
 	getline(cin, serialNumber);
@@ -102,7 +103,7 @@ int main(int argc, char* argv[])
 	iResult = connect(mySocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
 	if (iResult == SOCKET_ERROR)
 	{
-		cerr << "Connect failed with error: " << WSAGetLastError() << endl;
+		cout << "Connect failed with error: " << std::to_string(WSAGetLastError()) << endl;
 		cleanup(mySocket);
 		return 1;
 	}
@@ -168,7 +169,7 @@ int main(int argc, char* argv[])
 	// If the server returns anything else then we are stopping activation
 	else
 	{
-		cout << "Machine Id: Invalid" << endl;
+		cout << "Machine Id: Invalid\nCouldn't activate this machine" << endl;
 		cleanup(mySocket);
 		return 1;
 	}
@@ -196,7 +197,7 @@ bool fexists()
 	return true;
 }
 
-bool determineactivated(const string& machine_id)
+bool determineactivated(const string machine_id)
 {
 	ifstream fin;
 	fin.open(ACTIVATIONFILENAME, ios::in);
@@ -210,13 +211,13 @@ bool determineactivated(const string& machine_id)
 	return false;
 }
 
-void storemachineid(const string& machine_id)
+void storemachineid(const string machine_id)
 {
 	fstream act_file;
 	act_file.open(ACTIVATIONFILENAME, ios::trunc | ios::out);
 	if (act_file.is_open())
 	{
-		act_file.write(machine_id.c_str(), sizeof(machine_id.c_str()));
+		act_file << machine_id;
 		act_file.close();
 	}
 	cout << "Couldn't open activation file" << endl;

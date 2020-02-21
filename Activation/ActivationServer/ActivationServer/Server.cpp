@@ -48,6 +48,12 @@ int main(int argc, char* argv[])
 		port = DEFAULTPORT;
 
 
+	// First thing, create a data file if it doesn't exist
+	ofstream fileserv;
+	fileserv.open(DATAFILENAME, std::ofstream::app);
+	fileserv.close();
+	
+
 	// WSAStartup loads WS2_32.dll (Winsock version 2.2) used in network programming
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR)
@@ -63,6 +69,7 @@ int main(int argc, char* argv[])
 	{
 		cerr << "Socket failed with error: " << WSAGetLastError() << endl;
 		cleanup(listenSocket);
+		WSACleanup();
 		return 1;
 	}
 
@@ -81,6 +88,7 @@ int main(int argc, char* argv[])
 	{
 		cerr << "Bind failed with error: " << WSAGetLastError() << endl;
 		cleanup(listenSocket);
+		WSACleanup();
 		return 1;
 	}
 
@@ -91,60 +99,102 @@ int main(int argc, char* argv[])
 	{
 		cerr << "Listen failed with error: " << WSAGetLastError() << endl;
 		cleanup(listenSocket);
-		return 1;
-	}
-	
-
-	cout << "\nWaiting for connections...\n" << endl;
-
-	// Accept an incoming connection; Program pauses here until a connection arrives
-	clientSocket = accept(listenSocket, NULL, NULL);
-	if (clientSocket == INVALID_SOCKET)
-	{
-		cerr << "Accept failed with error: " << WSAGetLastError() << endl;
-		// Need to close listenSocket; clientSocket never opened
-		cleanup(listenSocket);
+		WSACleanup();
 		return 1;
 	}
 
 
-	// Receive the serial number from the client
-	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
-	for (int i = 0; i < BUFFERSIZE; i++)
+	while (true)
 	{
-		if (buffer[i] == '\0')
+		cout << "\nWaiting for connections...\n" << endl;
+
+		
+		// Accept an incoming connection; Program pauses here until a connection arrives
+		clientSocket = accept(listenSocket, NULL, NULL);
+		if (clientSocket == INVALID_SOCKET)
 		{
-			// Send a message back to the client that this is a valid serial number
-			string message = "good";
-			send(clientSocket, message.c_str(), sizeof(message.c_str()), 0);
-			break;
+			cerr << "Accept failed with error: " << WSAGetLastError() << endl;
+			// Need to close listenSocket; clientSocket never opened
+			cleanup(listenSocket);
+			WSACleanup();
+			return 1;
 		}
-		if (!isdigit(buffer[i]))
+
+
+		// Receive the serial number from the client
+		bool invalidSerial = false;
+		iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
+		if (iResult == SOCKET_ERROR)
 		{
-			// Send a message back to the client that this is an invalid serial number
-			string message = "invalid";
-			send(clientSocket, message.c_str(), sizeof(message.c_str()), 0);
+			cerr << "Receive failed with error: " << WSAGetLastError() << endl;
+			cleanup(clientSocket);
+			continue;
 		}
+		else
+		{
+			for (int i = 0; i < BUFFERSIZE; i++)
+			{
+				if (buffer[i] == '\0')
+				{
+					cout << "Serial number: Good" << endl;
+					// Send a message back to the client that this is a valid serial number
+					string message = "good";
+					send(clientSocket, message.c_str(), sizeof(message.c_str()), 0);
+					break;
+				}
+				if (!isdigit(buffer[i]))
+				{
+					cout << "Serial number: Invalid" << endl;
+					// Send a message back to the client that this is an invalid serial number
+					string message = "invalid";
+					send(clientSocket, message.c_str(), sizeof(message.c_str()), 0);
+					cleanup(clientSocket);
+					invalidSerial = true;
+				}
+			}
+			if (invalidSerial)
+			{
+				continue;
+			}
+		}
+
+
+		//turns the character array into a string, if this yells let me know.
+		string serial(buffer);
+
+
+		// Receive the machine id
+		iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
+		if (iResult == SOCKET_ERROR)
+		{
+			cerr << "Receive failed with error: " << WSAGetLastError() << endl;
+			cleanup(clientSocket);
+			continue;
+		}
+		string machine_id(buffer);
+
+
+		// Send back a valid or invalid message for activation
+		string response = checkserial(serial, machine_id);
+		if (response == "good")
+		{
+			cout << "Machine activated" << endl;
+		}
+		else
+		{
+			cout << "Machine not activated" << endl;
+		}
+
+		iResult = send(clientSocket, response.c_str(), sizeof(response.c_str()), 0);
+		if (iResult == SOCKET_ERROR)
+		{
+			cerr << "Send failed with error: " << WSAGetLastError() << endl;
+			cleanup(clientSocket);
+			continue;
+		}
+
+		cleanup(clientSocket);
 	}
-
-
-	//turns the character array into a string, if this yells let me know.
-	string serial(buffer);
-
-	
-	// Receive the machine id
-	iResult = recv(clientSocket, buffer, BUFFERSIZE - 1, 0);
-	string machine_id(buffer);
-
-
-	// Send back a valid or invalid message for activation
-	string response = checkserial(serial, machine_id);
-	send(clientSocket,response.c_str(), sizeof(response.c_str()),0);
-	
-	cleanup(clientSocket);
-	cleanup(listenSocket);
-
-	return 0;
 }
 
 
@@ -152,8 +202,6 @@ void cleanup(SOCKET socket)
 {
 	if (socket != INVALID_SOCKET)
 		closesocket(socket);
-
-	WSACleanup();
 }
 
 void activatenum(string serialnum, string machineid)
@@ -161,10 +209,8 @@ void activatenum(string serialnum, string machineid)
 	ofstream fileserv;
 	fileserv.open(DATAFILENAME, std::ofstream::app);
 	// if there is an error here, separate the + \n's into separate writes.
-	fileserv.write(serialnum.c_str(), sizeof(serialnum.c_str()));
-	fileserv << endl;
-	fileserv.write(machineid.c_str(), sizeof(machineid.c_str()));
-	fileserv << endl;
+	fileserv << serialnum.c_str() << "\n";
+	fileserv << machineid.c_str() << "\n";
 	fileserv.close();
 }
 
